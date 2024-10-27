@@ -1,63 +1,45 @@
 #!/usr/bin/python3
+
+"""Script that reads stdin line by line and computes metrics"""
+
 import sys
-import signal
 
-# Initialize global variables
-total_size = 0
-status_codes_count = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
-line_count = 0
 
-# Function to print the statistics
-def print_stats():
-    global total_size
-    print("File size: {}".format(total_size))
-    for code in sorted(status_codes_count.keys()):
-        if status_codes_count[code] > 0:
-            print("{}: {}".format(code, status_codes_count[code]))
+def printsts(dic, size):
+    """ WWPrints information """
+    print("File size: {:d}".format(size))
+    for i in sorted(dic.keys()):
+        if dic[i] != 0:
+            print("{}: {:d}".format(i, dic[i]))
 
-# Function to handle keyboard interruption (CTRL + C)
-def signal_handler(sig, frame):
-    print_stats()
-    sys.exit(0)
 
-# Register the signal handler for SIGINT (CTRL + C)
-signal.signal(signal.SIGINT, signal_handler)
+sts = {"200": 0, "301": 0, "400": 0, "401": 0, "403": 0,
+       "404": 0, "405": 0, "500": 0}
 
-# Process each line from stdin
+count = 0
+size = 0
+
 try:
     for line in sys.stdin:
+        if count != 0 and count % 10 == 0:
+            printsts(sts, size)
+
+        stlist = line.split()
+        count += 1
+
         try:
-            parts = line.split()
-            # Check if the line is in the correct format
-            if len(parts) < 7:
-                continue
+            size += int(stlist[-1])
+        except:
+            pass
 
-            # Extract the status code and file size from the line
-            status_code = int(parts[-2])
-            file_size = int(parts[-1])
+        try:
+            if stlist[-2] in sts:
+                sts[stlist[-2]] += 1
+        except:
+            pass
+    printsts(sts, size)
 
-            # Update the total file size
-            total_size += file_size
-
-            # Update the status code count if it's one of the expected codes
-            if status_code in status_codes_count:
-                status_codes_count[status_code] += 1
-
-            line_count += 1
-
-            # Print statistics every 10 lines
-            if line_count % 10 == 0:
-                print_stats()
-
-        except (ValueError, IndexError):
-            # Skip lines with incorrect format or invalid values
-            continue
-
-    # Print final statistics after reading all input
-    print_stats()
 
 except KeyboardInterrupt:
-    # Handle the case when the script is interrupted with CTRL + C
-    print_stats()
-    sys.exit(0)
-
+    printsts(sts, size)
+    raise
